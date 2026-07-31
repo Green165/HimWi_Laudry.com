@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HimWi Laundry — Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F8FC; --panel:#FFFFFF; --panel-soft:#EEF1FB; --gold:#E91E8C; --gold-light:#FF6FB0;
+    --red:#00A3E0; --red-bright:#0077C2; --cream:#262B45; --muted:#7A82A0; --green:#2E9E63; --border:#D9DEEF;
+    --warn:#E0304F;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--cream);font-family:'Inter',sans-serif;}
+  .serif{font-family:'Cormorant Garamond',serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  header{background:linear-gradient(135deg,#E91E8C 0%, #00A3E0 100%);border-bottom:1px solid var(--border);padding:36px 20px;text-align:center;position:relative;}
+  header .label{color:#FFFFFFcc;letter-spacing:4px;font-size:10px;text-transform:uppercase;margin-bottom:8px;}
+  header h1{color:#FFFFFF;font-size:2.4rem;font-style:italic;font-weight:600;margin:0;text-shadow:0 1px 6px rgba(0,0,0,.12);}
+  header h1 span{color:#FFF3F8;}
+  header .sub{color:#FFFFFFdd;letter-spacing:2px;font-size:11px;text-transform:uppercase;margin-top:8px;}
+  .stamp{border:2px solid #FFFFFF;color:#FFFFFF;border-radius:50%;width:110px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:20px auto 0;background:rgba(255,255,255,0.16);}
+  .stamp .t{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#FFFFFFcc;}
+  .stamp .v{font-size:13px;font-weight:bold;padding:0 8px;text-align:center;}
+  .actions{display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
+  .btn{cursor:pointer;border:none;font-size:12px;padding:9px 14px;border-radius:6px;font-family:'Inter',sans-serif;}
+  .btn-outline{background:#FFFFFF;border:1.5px solid #FFFFFF;color:var(--gold);}
+  .btn-gold{background:var(--gold);color:#FFFFFF;font-weight:600;}
+  .btn-red{background:var(--red-bright);color:#FFFFFF;font-weight:600;}
+  main{max-width:1100px;margin:0 auto;padding:28px 16px 60px;}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;}
+  @media(min-width:768px){.cards{grid-template-columns:repeat(3,1fr);}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;border-top-width:3px;box-shadow:0 1px 3px rgba(46,58,89,.06);}
+  .card .val{font-size:1.15rem;font-weight:600;color:var(--cream);}
+  .card .lbl{color:var(--muted);font-size:11px;margin-top:3px;}
+  .target-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;box-shadow:0 1px 3px rgba(46,58,89,.06);}
+  .progress-track{background:var(--panel-soft);border:1px solid var(--border);border-radius:20px;height:10px;overflow:hidden;margin-top:8px;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--red-bright));border-radius:20px;transition:width .3s;}
+  .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;margin:22px 0 18px;overflow-x:auto;}
+  .tab-btn{border:none;background:transparent;color:var(--muted);padding:7px 14px;border-radius:7px;font-size:12.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+  .tab-btn.active{background:linear-gradient(135deg,var(--gold),var(--red-bright));color:#FFFFFF;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(46,58,89,.06);}
+  .panel h2{font-family:'Cormorant Garamond',serif;color:var(--cream);font-size:1.3rem;margin:0 0 14px;}
+  .grid2{display:grid;gap:14px;}
+  @media(min-width:900px){.grid2{grid-template-columns:2fr 3fr;}}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  input,select{width:100%;background:var(--panel-soft);border:1px solid var(--border);color:var(--cream);border-radius:6px;padding:9px 11px;font-size:14px;margin-bottom:14px;font-family:'Inter',sans-serif;}
+  input::placeholder{color:#A8AFC2;}
+  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.5) sepia(1) saturate(3) hue-rotate(280deg);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .chip{border:1px solid var(--border);color:var(--cream);background:var(--panel-soft);padding:7px 11px;border-radius:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .chip.active{background:linear-gradient(135deg,var(--gold),var(--red-bright));border-color:transparent;color:#FFFFFF;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--muted);text-transform:uppercase;font-size:10px;border-bottom:1px solid var(--border);padding:8px 6px;}
+  td{padding:8px 6px;border-bottom:1px solid var(--border);}
+  .right{text-align:right;}
+  .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;}
+  .empty{color:var(--muted);font-style:italic;text-align:center;padding:20px;}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(51,57,90,.5);align-items:center;justify-content:center;padding:16px;z-index:50;}
+  .modal-bg.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(46,58,89,.18);}
+  .modal h3{font-family:'Cormorant Garamond',serif;color:var(--cream);margin:0 0 14px;}
+  .emp-row{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:13px;}
+  .close-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;float:right;}
+  .hint{color:var(--muted);font-size:10px;margin-top:10px;}
+  .badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block;}
+  .badge-diterima{background:#E7E9F5;color:#454C6E;}
+  .badge-diproses{background:#FBD3E7;color:#B01464;}
+  .badge-siap{background:#CDEEFC;color:#03688F;}
+  .badge-selesai{background:#CDEFDC;color:#1C7A4C;}
+  .stock-low{color:var(--warn);font-weight:600;}
+  .item-type-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .item-type-toggle button{flex:1;border:1.5px solid var(--border);background:var(--panel-soft);color:var(--muted);padding:9px;border-radius:7px;font-size:12.5px;cursor:pointer;font-weight:600;}
+  .item-type-toggle button.active{background:linear-gradient(135deg,var(--gold),var(--red-bright));border-color:transparent;color:#FFFFFF;}
+  .cart-box{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:14px;background:var(--panel-soft);}
+  .cart-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 2px;border-bottom:1px solid var(--border);}
+  .cart-row:last-child{border-bottom:none;}
+  .cart-total{display:flex;justify-content:space-between;font-weight:700;padding-top:8px;margin-top:4px;border-top:2px solid var(--border);font-size:13.5px;}
+  #printNotaArea{display:none;}
+  @media print{
+    *{background:#fff !important;color:#111 !important;border-color:#ccc !important;box-shadow:none !important;}
+    .print-hide{display:none !important;}
+    body.printing-nota > *:not(#printNotaArea){display:none !important;}
+    body.printing-nota #printNotaArea{display:block !important;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label">— Buku Catatan Harian —</div>
+  <h1 class="serif">Him<span>W</span>i Laundry</h1>
+  <div class="sub">Monitor Pelanggan · Upah · Pengeluaran</div>
+  <div class="stamp mono">
+    <div class="t">Hari Ini</div>
+    <div class="v" id="stampToday">Belum ada</div>
+  </div>
+  <div class="actions print-hide">
+    <button class="btn btn-outline" onclick="window.print()">🖨 Cetak Laporan</button>
+    <button class="btn btn-gold" onclick="downloadCSV()">⬇ Unduh CSV</button>
+  </div>
+</header>
+
+<main>
+  <div class="cards" id="cardsRow1"></div>
+  <div class="cards" id="cardsRow2"></div>
+  <div class="target-card" id="targetCard"></div>
+
+  <div class="tabs print-hide">
+    <button class="tab-btn active" id="tabHarianBtn" onclick="setTab('harian')">Catatan Harian</button>
+    <button class="tab-btn" id="tabPesananBtn" onclick="setTab('pesanan')">Pesanan</button>
+    <button class="tab-btn" id="tabUpahBtn" onclick="setTab('upah')">Upah Mingguan</button>
+    <button class="tab-btn" id="tabPengeluaranBtn" onclick="setTab('pengeluaran')">Pengeluaran (BOP)</button>
+    <button class="tab-btn" id="tabStokBtn" onclick="setTab('stok')">Stok Bahan</button>
+    <button class="tab-btn" id="tabSettingBtn" onclick="setTab('setting')">Pengaturan</button>
+  </div>
+
+  <!-- TAB: CATATAN HARIAN -->
+  <div id="tabHarian">
+    <div class="grid2">
+      <div class="panel print-hide">
+        <h2>Catat Hari Ini</h2>
+        <label>Tanggal</label>
+        <input type="date" id="entryDate" class="mono">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <label style="margin:0;">Pekerja Masuk</label>
+          <button style="background:none;border:none;color:var(--gold);font-size:11px;cursor:pointer;" onclick="openEmployeeManager()">+ kelola pekerja</button>
+        </div>
+        <div class="chips" id="employeeChips"></div>
+        <p class="hint" style="margin-bottom:14px;">Upah dihitung otomatis: kilogram × tarif/kg, dicairkan mingguan.</p>
+        <div class="row2">
+          <div><label>Jumlah Pelanggan</label><input type="number" min="0" id="entryPelanggan" class="mono" placeholder="0"></div>
+          <div><label>Jumlah Kilo (kg)</label><input type="number" min="0" id="entryKilogram" class="mono" placeholder="0"></div>
+        </div>
+        <label>Pendapatan (Rp)</label>
+        <input type="number" min="0" id="entryPendapatan" class="mono" placeholder="0">
+        <button class="btn btn-gold" style="width:100%;padding:11px;" onclick="saveEntry()">Simpan Catatan</button>
+        <p id="saveMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:8px;"></p>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h2>Pendapatan vs Upah — 7 Catatan Terakhir</h2>
+          <canvas id="chartCanvas" height="140"></canvas>
+          <p class="empty" id="chartEmpty" style="display:none;">Belum ada data untuk ditampilkan.</p>
+        </div>
+        <div class="panel">
+          <h2>Perbandingan Pendapatan per Bulan</h2>
+          <canvas id="chartMonthly" height="140"></canvas>
+          <p class="empty" id="chartMonthlyEmpty" style="display:none;">Belum ada data untuk ditampilkan.</p>
+        </div>
+        <div class="panel">
+          <h2>Riwayat Catatan</h2>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Tanggal</th><th>Pekerja</th><th class="right">Pelanggan</th><th class="right">Kg</th><th class="right">Pendapatan</th><th class="right">Upah</th><th class="print-hide"></th></tr></thead>
+              <tbody id="entriesTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: PESANAN -->
+  <div id="tabPesanan" style="display:none;">
+    <div class="grid2">
+      <div class="panel print-hide">
+        <h2>Pesanan Baru</h2>
+        <label>Nama Pelanggan</label>
+        <input type="text" id="orderNama" placeholder="Nama pelanggan">
+        <label>No. HP Pelanggan (opsional, untuk share WA)</label>
+        <input type="text" id="orderHp" class="mono" placeholder="08xxxxxxxxxx">
+
+        <label style="margin-top:4px;">Jenis Item</label>
+        <div class="item-type-toggle">
+          <button type="button" id="btnTipeKg" class="active" onclick="setItemTipe('kg')">⚖️ Kiloan</button>
+          <button type="button" id="btnTipeSatuan" onclick="setItemTipe('satuan')">📦 Produk Lain / Satuan</button>
+        </div>
+
+        <div id="blokTipeKg">
+          <label>Layanan</label>
+          <select id="orderLayanan" onchange="autoHitungHargaItem()">
+            <option value="Express" data-rate="15000">Express (Rp15.000/kg)</option>
+            <option value="Cuci Setrika" data-rate="10000">Cuci Setrika (Rp10.000/kg)</option>
+            <option value="Cuci Lipat" data-rate="8000">Cuci Lipat (Rp8.000/kg)</option>
+          </select>
+          <label>Jumlah Kilogram</label>
+          <input type="number" min="0" id="orderKg" class="mono" placeholder="0" oninput="autoHitungHargaItem()">
+          <label>Harga (Rp) — otomatis, bisa diubah</label>
+          <input type="number" min="0" id="orderItemHarga" class="mono" placeholder="0">
+        </div>
+
+        <div id="blokTipeSatuan" style="display:none;">
+          <label>Nama Barang / Layanan</label>
+          <input type="text" id="itemNamaBarang" placeholder="misal: Cuci Sepatu, Bed Cover, Karpet, Boneka">
+          <div class="row2">
+            <div><label>Jumlah</label><input type="number" min="1" id="itemJumlah" class="mono" placeholder="1" value="1"></div>
+            <div><label>Harga per Item (Rp)</label><input type="number" min="0" id="itemHargaSatuan" class="mono" placeholder="0"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-outline" style="width:100%;padding:10px;margin-bottom:16px;" onclick="addItemToCart()">+ Tambah ke Nota</button>
+
+        <div class="cart-box" id="cartBox"></div>
+
+        <button class="btn btn-gold" style="width:100%;padding:11px;" onclick="addOrder()">Buat Nota</button>
+        <p id="orderMsg" style="text-align:center;color:var(--green);font-size:12px;margin-top:8px;"></p>
+      </div>
+      <div class="panel">
+        <h2>Daftar Pesanan</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>No. Nota</th><th>Pelanggan</th><th>Item</th><th class="right">Total</th><th>Status</th><th class="print-hide"></th></tr></thead>
+            <tbody id="ordersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: UPAH MINGGUAN -->
+  <div id="tabUpah" style="display:none;">
+    <div class="panel print-hide" style="margin-bottom:20px;">
+      <h2>Tarif Upah</h2>
+      <label>Upah per Kilogram (Rp)</label>
+      <input type="number" min="0" id="wageRate" class="mono" style="max-width:220px;">
+      <button class="btn btn-gold" onclick="saveWageRate()">Simpan Tarif</button>
+    </div>
+    <div class="panel" style="margin-bottom:20px;">
+      <h2>Rekap Upah per Minggu</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Minggu</th><th>Pekerja Bertugas</th><th class="right">Total Kg</th><th class="right">Upah (Rp)</th><th>Status</th><th class="print-hide"></th></tr></thead>
+          <tbody id="weeklyTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Rekap Kehadiran per Pekerja (Bulan Ini)</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Nama Pekerja</th><th class="right">Jumlah Hari Hadir</th></tr></thead>
+          <tbody id="attendanceTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: PENGELUARAN -->
+  <div id="tabPengeluaran" style="display:none;">
+    <div class="grid2">
+      <div class="panel print-hide">
+        <h2>Catat Pengeluaran (BOP)</h2>
+        <label>Tanggal</label>
+        <input type="date" id="expDate" class="mono">
+        <label>Kategori</label>
+        <input type="text" id="expCategory" placeholder="Listrik, sabun, plastik, sewa, dll">
+        <label>Jumlah (Rp)</label>
+        <input type="number" min="0" id="expAmount" class="mono" placeholder="0">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="expNote" placeholder="misal: beli deterjen 5kg">
+        <button class="btn btn-red" style="width:100%;padding:11px;" onclick="addExpense()">Tambah Pengeluaran</button>
+      </div>
+      <div class="panel">
+        <h2>Riwayat Pengeluaran</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Kategori</th><th>Catatan</th><th class="right">Jumlah</th><th class="print-hide"></th></tr></thead>
+            <tbody id="expensesTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: STOK BAHAN -->
+  <div id="tabStok" style="display:none;">
+    <div class="grid2">
+      <div class="panel print-hide">
+        <h2>Tambah / Update Stok</h2>
+        <label>Nama Bahan</label>
+        <input type="text" id="stockNama" placeholder="Deterjen, plastik, pewangi, dll">
+        <div class="row2">
+          <div><label>Jumlah</label><input type="number" min="0" id="stockJumlah" class="mono" placeholder="0"></div>
+          <div><label>Satuan</label><input type="text" id="stockSatuan" placeholder="kg / pcs / liter"></div>
+        </div>
+        <label>Batas Minimum (untuk peringatan)</label>
+        <input type="number" min="0" id="stockMinimum" class="mono" placeholder="0">
+        <button class="btn btn-gold" style="width:100%;padding:11px;" onclick="addStock()">Simpan Bahan</button>
+      </div>
+      <div class="panel">
+        <h2>Daftar Stok</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Bahan</th><th class="right">Jumlah</th><th class="right">Minimum</th><th></th><th class="print-hide"></th></tr></thead>
+            <tbody id="stockTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: PENGATURAN -->
+  <div id="tabSetting" style="display:none;">
+    <div class="grid2">
+      <div class="panel">
+        <h2>Target Bulanan</h2>
+        <label>Target Pendapatan Bulan Ini (Rp)</label>
+        <input type="number" min="0" id="targetInput" class="mono" placeholder="0">
+        <button class="btn btn-gold" style="width:100%;padding:11px;" onclick="saveTarget()">Simpan Target</button>
+      </div>
+      <div class="panel">
+        <h2>Backup &amp; Restore Data</h2>
+        <p class="hint" style="margin-bottom:14px;">Semua data tersimpan di browser HP ini saja. Backup rutin supaya data aman kalau HP/browser berubah.</p>
+        <button class="btn btn-gold" style="width:100%;padding:11px;margin-bottom:10px;" onclick="backupData()">⬇ Backup Data (JSON)</button>
+        <label>Impor Data dari File Backup</label>
+        <input type="file" id="restoreFile" accept="application/json">
+        <button class="btn btn-outline" style="width:100%;padding:11px;" onclick="restoreData()">⬆ Impor Data</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-bg print-hide" id="empModal">
+  <div class="modal">
+    <button class="close-x" onclick="closeEmployeeManager()">✕</button>
+    <h3>Kelola Pekerja</h3>
+    <label>Nama pekerja baru</label>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <input type="text" id="newEmpName" placeholder="Nama pekerja" style="margin-bottom:0;">
+      <button class="btn btn-gold" onclick="addEmployee()">+</button>
+    </div>
+    <div id="employeeList" style="max-height:200px;overflow-y:auto;"></div>
+    <p class="hint">Upah tidak dihitung per pekerja, tapi dari total kilogram tim × tarif/kg per minggu (lihat tab "Upah Mingguan").</p>
+  </div>
+</div>
+
+<div class="modal-bg print-hide" id="notaModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="close-x" onclick="closeNota()">✕</button>
+    <div id="notaContent"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-gold" style="flex:1;padding:10px;" onclick="printNota()">🖨 Cetak</button>
+      <button class="btn btn-outline" style="flex:1;padding:10px;" onclick="shareNota()">📤 Share ke Pelanggan</button>
+    </div>
+  </div>
+</div>
+
+<div id="printNotaArea"></div>
+
+<script>
+const GOLD="#E91E8C", RED_BRIGHT="#0077C2", GREEN="#2E9E63", MUTED="#7A82A0", BORDER="#D9DEEF", CREAM="#262B45", WARN="#E0304F";
+const STATUS_LIST = ["Diterima","Diproses","Siap Diambil","Sudah Diambil"];
+const STATUS_CLASS = {"Diterima":"badge-diterima","Diproses":"badge-diproses","Siap Diambil":"badge-siap","Sudah Diambil":"badge-selesai"};
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function formatRp(n){ return "Rp " + Number(n||0).toLocaleString("id-ID"); }
+function formatTanggal(iso){ const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("id-ID",{weekday:"short",day:"numeric",month:"short"}); }
+function formatBulan(ym){ const d=new Date(ym+"-01T00:00:00"); return d.toLocaleDateString("id-ID",{month:"short",year:"numeric"}); }
+function inThisMonth(iso){ const d=new Date(iso+"T00:00:00"), now=new Date(); return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth(); }
+function monthKey(iso){ return iso.slice(0,7); }
+
+function load(key, fallback){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+let employees = load("himwi_employees", []);
+let entries = load("himwi_entries", []);
+let expenses = load("himwi_expenses", []);
+let orders = load("himwi_orders", []);
+let notaCounter = load("himwi_nota_counter", 0);
+let stock = load("himwi_stock", []);
+let target = load("himwi_target", {pendapatan:0});
+let wageRate = load("himwi_wage_rate", 2500);
+let weeklyPaid = load("himwi_weekly_paid", {});
+let present = [];
+let currentTab = "harian";
+let chart = null, monthlyChart = null;
+
+document.getElementById("entryDate").value = todayISO();
+document.getElementById("expDate").value = todayISO();
+document.getElementById("wageRate").value = wageRate;
+document.getElementById("targetInput").value = target.pendapatan || "";
+
+const ALL_KEYS = ["himwi_employees","himwi_entries","himwi_expenses","himwi_orders","himwi_nota_counter","himwi_stock","himwi_target","himwi_wage_rate","himwi_weekly_paid"];
+
+/* ================= TABS ================= */
+function setTab(t){
+  currentTab = t;
+  ["Harian","Pesanan","Upah","Pengeluaran","Stok","Setting"].forEach(name=>{
+    const key = name.toLowerCase();
+    document.getElementById("tab"+name).style.display = (t===key) ? "block" : "none";
+    document.getElementById("tab"+name+"Btn").classList.toggle("active", t===key);
+  });
+  if(t==="upah"){ renderWeeklyTable(); renderAttendanceTable(); }
+}
+
+/* ================= EMPLOYEES ================= */
+function openEmployeeManager(){ document.getElementById("empModal").classList.add("show"); renderEmployeeList(); }
+function closeEmployeeManager(){ document.getElementById("empModal").classList.remove("show"); }
+
+function addEmployee(){
+  const name = document.getElementById("newEmpName").value.trim();
+  if(!name || employees.some(e=>e.name===name)) return;
+  employees.push({name});
+  save("himwi_employees", employees);
+  document.getElementById("newEmpName").value = "";
+  renderEmployeeList(); renderEmployeeChips(); renderAll();
+}
+
+function removeEmployee(name){
+  employees = employees.filter(e=>e.name!==name);
+  present = present.filter(n=>n!==name);
+  save("himwi_employees", employees);
+  renderEmployeeList(); renderEmployeeChips(); renderAll();
+}
+
+function renderEmployeeList(){
+  const box = document.getElementById("employeeList");
+  if(employees.length===0){ box.innerHTML = '<p class="hint" style="font-style:italic;">Belum ada pekerja terdaftar.</p>'; return; }
+  box.innerHTML = employees.map(e => `
+    <div class="emp-row">
+      <span style="flex:1;">${e.name}</span>
+      <button class="del" onclick="removeEmployee('${e.name.replace(/'/g,"\\'")}')">🗑</button>
+    </div>
+  `).join("");
+}
+
+function togglePresent(name){
+  present = present.includes(name) ? present.filter(n=>n!==name) : [...present, name];
+  renderEmployeeChips();
+}
+
+function renderEmployeeChips(){
+  const box = document.getElementById("employeeChips");
+  if(employees.length===0){ box.innerHTML = '<p class="hint" style="font-style:italic;">Belum ada pekerja. Tambahkan dulu.</p>'; return; }
+  box.innerHTML = employees.map(e => `
+    <button class="chip ${present.includes(e.name)?'active':''}" onclick="togglePresent('${e.name.replace(/'/g,"\\'")}')">${present.includes(e.name)?'☑':'☐'} ${e.name}</button>
+  `).join("");
+}
+
+/* ================= ENTRIES (CATATAN HARIAN) ================= */
+function loadEntryForDate(){
+  const date = document.getElementById("entryDate").value;
+  const existing = entries.find(e=>e.date===date);
+  present = existing ? [...(existing.present||[])] : [];
+  document.getElementById("entryPelanggan").value = existing ? existing.pelanggan : "";
+  document.getElementById("entryKilogram").value = existing ? existing.kilogram : "";
+  document.getElementById("entryPendapatan").value = existing ? existing.pendapatan : "";
+  renderEmployeeChips();
+}
+document.getElementById("entryDate").addEventListener("change", loadEntryForDate);
+
+function saveEntry(){
+  const date = document.getElementById("entryDate").value;
+  entries = entries.filter(e=>e.date!==date);
+  entries.push({
+    date,
+    present: [...present],
+    pelanggan: Number(document.getElementById("entryPelanggan").value)||0,
+    kilogram: Number(document.getElementById("entryKilogram").value)||0,
+    pendapatan: Number(document.getElementById("entryPendapatan").value)||0,
+  });
+  entries.sort((a,b)=> a.date<b.date?1:-1);
+  save("himwi_entries", entries);
+  const msg = document.getElementById("saveMsg");
+  msg.textContent = "Tersimpan";
+  setTimeout(()=>msg.textContent="", 2000);
+  renderAll();
+}
+
+function deleteEntry(date){
+  entries = entries.filter(e=>e.date!==date);
+  save("himwi_entries", entries);
+  renderAll();
+}
+
+/* ================= PESANAN (ORDERS) ================= */
+let itemTipe = "kg";
+let orderItems = [];
+
+function setItemTipe(t){
+  itemTipe = t;
+  document.getElementById("btnTipeKg").classList.toggle("active", t==="kg");
+  document.getElementById("btnTipeSatuan").classList.toggle("active", t==="satuan");
+  document.getElementById("blokTipeKg").style.display = t==="kg" ? "block" : "none";
+  document.getElementById("blokTipeSatuan").style.display = t==="satuan" ? "block" : "none";
+}
+
+function autoHitungHargaItem(){
+  const sel = document.getElementById("orderLayanan");
+  const rate = Number(sel.options[sel.selectedIndex].dataset.rate)||0;
+  const kg = Number(document.getElementById("orderKg").value)||0;
+  document.getElementById("orderItemHarga").value = rate*kg;
+}
+
+function addItemToCart(){
+  let item;
+  if(itemTipe === "kg"){
+    const sel = document.getElementById("orderLayanan");
+    const nama = sel.options[sel.selectedIndex].text.split(" (")[0];
+    const kg = Number(document.getElementById("orderKg").value)||0;
+    const harga = Number(document.getElementById("orderItemHarga").value)||0;
+    if(!kg || !harga){ alert("Isi jumlah kilogram dan harga terlebih dahulu."); return; }
+    item = { id:Date.now(), tipe:"kg", nama, qty:kg, satuan:"kg", subtotal:harga };
+    document.getElementById("orderKg").value = "";
+    document.getElementById("orderItemHarga").value = "";
+  } else {
+    const nama = document.getElementById("itemNamaBarang").value.trim();
+    const qty = Number(document.getElementById("itemJumlah").value)||1;
+    const hargaSatuan = Number(document.getElementById("itemHargaSatuan").value)||0;
+    if(!nama || !hargaSatuan){ alert("Isi nama barang dan harga per item terlebih dahulu."); return; }
+    item = { id:Date.now(), tipe:"satuan", nama, qty, satuan:"pcs", subtotal: qty*hargaSatuan };
+    document.getElementById("itemNamaBarang").value = "";
+    document.getElementById("itemJumlah").value = "1";
+    document.getElementById("itemHargaSatuan").value = "";
+  }
+  orderItems.push(item);
+  renderCartBox();
+}
+
+function removeCartItem(id){
+  orderItems = orderItems.filter(i=>i.id!==id);
+  renderCartBox();
+}
+
+function renderCartBox(){
+  const box = document.getElementById("cartBox");
+  if(!orderItems.length){ box.innerHTML = '<p class="hint" style="margin:0;font-style:italic;">Belum ada item ditambahkan ke nota ini.</p>'; return; }
+  const total = orderItems.reduce((s,i)=>s+i.subtotal,0);
+  box.innerHTML = orderItems.map(i=>`
+    <div class="cart-row">
+      <span>${i.nama} <span style="color:${MUTED}">(${i.qty}${i.tipe==='kg'?'kg':'x'})</span></span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span class="mono">${formatRp(i.subtotal)}</span>
+        <button class="del" onclick="removeCartItem(${i.id})">🗑</button>
+      </span>
+    </div>
+  `).join("") + `<div class="cart-total"><span>Total</span><span class="mono" style="color:${GOLD}">${formatRp(total)}</span></div>`;
+}
+
+function addOrder(){
+  const nama = document.getElementById("orderNama").value.trim();
+  const hp = document.getElementById("orderHp").value.trim();
+  if(!nama){ alert("Isi nama pelanggan terlebih dahulu."); return; }
+  if(!orderItems.length){ alert("Tambahkan minimal 1 item/layanan ke nota."); return; }
+  notaCounter += 1;
+  save("himwi_nota_counter", notaCounter);
+  const total = orderItems.reduce((s,i)=>s+i.subtotal,0);
+  const kgTotal = orderItems.filter(i=>i.tipe==="kg").reduce((s,i)=>s+i.qty,0);
+  orders.unshift({
+    id: Date.now(),
+    nomor: "HW-" + String(notaCounter).padStart(4,"0"),
+    tanggal: todayISO(),
+    nama, hp,
+    items: orderItems.map(i=>({...i})),
+    harga: total,
+    kg: kgTotal,
+    status: "Diterima"
+  });
+  save("himwi_orders", orders);
+  orderItems = [];
+  document.getElementById("orderNama").value = "";
+  document.getElementById("orderHp").value = "";
+  renderCartBox();
+  renderOrdersTable();
+  const msg = document.getElementById("orderMsg");
+  msg.textContent = "Nota berhasil dibuat";
+  setTimeout(()=>msg.textContent="", 2000);
+}
+
+function updateOrderStatus(id, status){
+  orders = orders.map(o=> o.id===id ? {...o, status} : o);
+  save("himwi_orders", orders);
+  renderOrdersTable();
+}
+
+function deleteOrder(id){
+  orders = orders.filter(o=>o.id!==id);
+  save("himwi_orders", orders);
+  renderOrdersTable();
+}
+
+function orderItemsOf(o){
+  if(o.items && o.items.length) return o.items;
+  return [{ nama:o.layanan||"Layanan", tipe:"kg", qty:o.kg||0, satuan:"kg", subtotal:o.harga||0 }];
+}
+
+function orderSummary(o){
+  const items = orderItemsOf(o);
+  if(items.length===1) return `${items[0].nama} <span style="color:${MUTED};font-size:11px;">(${items[0].qty}${items[0].tipe==='kg'?'kg':'x'})</span>`;
+  return `${items.length} item <span style="color:${MUTED};font-size:11px;">(${items.map(i=>i.nama).join(", ")})</span>`;
+}
+
+function renderOrdersTable(){
+  const tbody = document.getElementById("ordersTable");
+  if(!orders.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty">Belum ada pesanan.</td></tr>'; return; }
+  tbody.innerHTML = orders.map(o=>`
+    <tr>
+      <td class="mono">${o.nomor}</td>
+      <td>${o.nama}</td>
+      <td style="font-size:12px;">${orderSummary(o)}</td>
+      <td class="right mono" style="color:${GOLD}">${formatRp(o.harga)}</td>
+      <td>
+        <select onchange="updateOrderStatus(${o.id}, this.value)" style="margin:0;padding:5px 8px;font-size:12px;width:auto;">
+          ${STATUS_LIST.map(s=>`<option value="${s}" ${s===o.status?"selected":""}>${s}</option>`).join("")}
+        </select>
+      </td>
+      <td class="print-hide" style="white-space:nowrap;">
+        <button class="del" onclick="viewNota(${o.id})">🧾</button>
+        <button class="del" onclick="deleteOrder(${o.id})">🗑</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+/* ================= NOTA: LIHAT / CETAK / SHARE ================= */
+let currentNotaId = null;
+
+function renderNotaHTML(o){
+  const items = orderItemsOf(o);
+  const rows = items.map(i=>`
+    <tr>
+      <td style="padding:4px 0;">${i.nama}</td>
+      <td style="padding:4px 0;text-align:center;white-space:nowrap;">${i.qty}${i.tipe==='kg'?'kg':'x'}</td>
+      <td style="padding:4px 0;text-align:right;">${formatRp(i.subtotal)}</td>
+    </tr>
+  `).join("");
+  return `
+    <div class="mono" style="font-size:13px;max-width:320px;margin:0 auto;">
+      <div style="text-align:center;margin-bottom:10px;">
+        <div class="serif" style="font-weight:700;font-size:22px;color:${GOLD};font-style:italic;">HimWi Laundry</div>
+        <div style="font-size:11px;letter-spacing:1px;color:${MUTED};">NOTA PEMBAYARAN</div>
+      </div>
+      <div>No. Nota&nbsp;: ${o.nomor}</div>
+      <div>Tanggal&nbsp;&nbsp;&nbsp;: ${formatTanggal(o.tanggal)}</div>
+      <div>Pelanggan&nbsp;: ${o.nama}</div>
+      ${o.hp ? `<div>No. HP&nbsp;&nbsp;&nbsp;&nbsp;: ${o.hp}</div>` : ""}
+      <div>Status&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: ${o.status}</div>
+      <hr style="border:none;border-top:1px dashed ${BORDER};margin:10px 0;">
+      <table style="width:100%;font-size:12.5px;"><tbody>${rows}</tbody></table>
+      <hr style="border:none;border-top:1px dashed ${BORDER};margin:10px 0;">
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;">
+        <span>TOTAL</span><span style="color:${GOLD}">${formatRp(o.harga)}</span>
+      </div>
+      <div style="text-align:center;margin-top:14px;font-size:11px;color:${MUTED};">Terima kasih sudah mencuci di HimWi Laundry 🙏</div>
+    </div>
+  `;
+}
+
+function notaText(o){
+  const items = orderItemsOf(o);
+  const lines = [];
+  lines.push("*HimWi Laundry*");
+  lines.push("Nota Pembayaran");
+  lines.push("No: " + o.nomor);
+  lines.push("Tanggal: " + formatTanggal(o.tanggal));
+  lines.push("Pelanggan: " + o.nama);
+  lines.push("------------------------------");
+  items.forEach(i=> lines.push(`${i.nama} (${i.qty}${i.tipe==='kg'?'kg':'x'}) : ${formatRp(i.subtotal)}`));
+  lines.push("------------------------------");
+  lines.push("TOTAL: " + formatRp(o.harga));
+  lines.push("Status: " + o.status);
+  lines.push("");
+  lines.push("Terima kasih 🙏 - HimWi Laundry");
+  return lines.join("\n");
+}
+
+function viewNota(id){
+  currentNotaId = id;
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  document.getElementById("notaContent").innerHTML = renderNotaHTML(o);
+  document.getElementById("notaModal").classList.add("show");
+}
+
+function closeNota(){ document.getElementById("notaModal").classList.remove("show"); }
+
+function printNota(){
+  const o = orders.find(x=>x.id===currentNotaId);
+  if(!o) return;
+  document.getElementById("printNotaArea").innerHTML = renderNotaHTML(o);
+  document.body.classList.add("printing-nota");
+  window.print();
+}
+window.addEventListener("afterprint", ()=>{ document.body.classList.remove("printing-nota"); });
+
+function shareNota(){
+  const o = orders.find(x=>x.id===currentNotaId);
+  if(!o) return;
+  const text = notaText(o);
+  if(navigator.share){
+    navigator.share({ title: "Nota " + o.nomor, text }).catch(()=>{});
+    return;
+  }
+  let phone = (o.hp||"").replace(/\D/g,"");
+  if(phone.startsWith("0")) phone = "62" + phone.slice(1);
+  const url = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank");
+}
+
+/* ================= UPAH MINGGUAN ================= */
+function saveWageRate(){
+  wageRate = Number(document.getElementById("wageRate").value) || 0;
+  save("himwi_wage_rate", wageRate);
+  renderAll();
+  if(currentTab==="upah"){ renderWeeklyTable(); renderAttendanceTable(); }
+}
+
+function upahForEntry(e){ return (e.kilogram||0) * wageRate; }
+
+function getWeekStart(dateStr){
+  const d = new Date(dateStr+"T00:00:00");
+  const day = d.getDay();
+  const diffToMonday = day===0 ? -6 : 1-day;
+  d.setDate(d.getDate()+diffToMonday);
+  return d.toISOString().slice(0,10);
+}
+function getWeekEnd(weekStart){
+  const d = new Date(weekStart+"T00:00:00");
+  d.setDate(d.getDate()+6);
+  return d.toISOString().slice(0,10);
+}
+
+function groupByWeek(){
+  const map = {};
+  entries.forEach(e=>{
+    const wk = getWeekStart(e.date);
+    if(!map[wk]) map[wk] = { weekStart:wk, kg:0, workers:new Set() };
+    map[wk].kg += (e.kilogram||0);
+    (e.present||[]).forEach(n=>map[wk].workers.add(n));
+  });
+  return Object.values(map).sort((a,b)=> a.weekStart<b.weekStart?1:-1);
+}
+
+function toggleWeekPaid(weekStart){
+  weeklyPaid[weekStart] = !weeklyPaid[weekStart];
+  save("himwi_weekly_paid", weeklyPaid);
+  renderWeeklyTable();
+}
+
+function renderWeeklyTable(){
+  const weeks = groupByWeek();
+  const tbody = document.getElementById("weeklyTable");
+  if(!weeks.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty">Belum ada data.</td></tr>'; return; }
+  tbody.innerHTML = weeks.map(w=>{
+    const upah = w.kg * wageRate;
+    const paid = !!weeklyPaid[w.weekStart];
+    return `
+      <tr>
+        <td>${formatTanggal(w.weekStart)} – ${formatTanggal(getWeekEnd(w.weekStart))}</td>
+        <td style="color:${MUTED};font-size:12px;">${[...w.workers].join(", ")||"—"}</td>
+        <td class="right mono">${w.kg} kg</td>
+        <td class="right mono" style="color:${GOLD}">${formatRp(upah)}</td>
+        <td><span style="color:${paid?GREEN:WARN};font-size:12px;">${paid?"✅ Sudah Dicairkan":"⏳ Belum Dicairkan"}</span></td>
+        <td class="print-hide"><button class="btn ${paid?'btn-outline':'btn-gold'}" style="padding:5px 10px;font-size:11px;" onclick="toggleWeekPaid('${w.weekStart}')">${paid?"Batal":"Tandai Cair"}</button></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderAttendanceTable(){
+  const counts = {};
+  employees.forEach(e=>counts[e.name]=0);
+  entries.filter(e=>inThisMonth(e.date)).forEach(e=>{
+    (e.present||[]).forEach(n=>{ counts[n] = (counts[n]||0)+1; });
+  });
+  const tbody = document.getElementById("attendanceTable");
+  const names = Object.keys(counts);
+  if(!names.length){ tbody.innerHTML = '<tr><td colspan="2" class="empty">Belum ada pekerja/data.</td></tr>'; return; }
+  tbody.innerHTML = names.map(n=>`
+    <tr><td>${n}</td><td class="right mono">${counts[n]} hari</td></tr>
+  `).join("");
+}
+
+/* ================= PENGELUARAN (BOP) ================= */
+function addExpense(){
+  const category = document.getElementById("expCategory").value.trim();
+  const amount = Number(document.getElementById("expAmount").value)||0;
+  if(!category || !amount) return;
+  expenses.push({
+    id: Date.now(),
+    date: document.getElementById("expDate").value,
+    category,
+    amount,
+    note: document.getElementById("expNote").value.trim(),
+  });
+  expenses.sort((a,b)=> a.date<b.date?1:-1);
+  save("himwi_expenses", expenses);
+  document.getElementById("expCategory").value = "";
+  document.getElementById("expAmount").value = "";
+  document.getElementById("expNote").value = "";
+  renderAll();
+}
+
+function deleteExpense(id){
+  expenses = expenses.filter(e=>e.id!==id);
+  save("himwi_expenses", expenses);
+  renderAll();
+}
+
+/* ================= STOK BAHAN ================= */
+function addStock(){
+  const nama = document.getElementById("stockNama").value.trim();
+  const jumlah = Number(document.getElementById("stockJumlah").value)||0;
+  const satuan = document.getElementById("stockSatuan").value.trim();
+  const minimum = Number(document.getElementById("stockMinimum").value)||0;
+  if(!nama) return;
+  const existing = stock.find(s=>s.nama.toLowerCase()===nama.toLowerCase());
+  if(existing){
+    existing.jumlah = jumlah; existing.satuan = satuan || existing.satuan; existing.minimum = minimum;
+  } else {
+    stock.push({id:Date.now(), nama, jumlah, satuan, minimum});
+  }
+  save("himwi_stock", stock);
+  document.getElementById("stockNama").value = "";
+  document.getElementById("stockJumlah").value = "";
+  document.getElementById("stockSatuan").value = "";
+  document.getElementById("stockMinimum").value = "";
+  renderStockTable();
+}
+
+function adjustStock(id, delta){
+  stock = stock.map(s=> s.id===id ? {...s, jumlah: Math.max(0,(s.jumlah||0)+delta)} : s);
+  save("himwi_stock", stock);
+  renderStockTable();
+}
+
+function deleteStock(id){
+  stock = stock.filter(s=>s.id!==id);
+  save("himwi_stock", stock);
+  renderStockTable();
+}
+
+function renderStockTable(){
+  const tbody = document.getElementById("stockTable");
+  if(!stock.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty">Belum ada data stok.</td></tr>'; return; }
+  tbody.innerHTML = stock.map(s=>{
+    const low = s.jumlah <= s.minimum;
+    return `
+      <tr>
+        <td>${s.nama}</td>
+        <td class="right mono ${low?'stock-low':''}">${s.jumlah} ${s.satuan||""}</td>
+        <td class="right mono" style="color:${MUTED}">${s.minimum} ${s.satuan||""}</td>
+        <td>${low ? '<span class="stock-low">⚠️ Menipis</span>' : ''}</td>
+        <td class="print-hide" style="white-space:nowrap;">
+          <button class="del" onclick="adjustStock(${s.id}, -1)">➖</button>
+          <button class="del" onclick="adjustStock(${s.id}, 1)">➕</button>
+          <button class="del" onclick="deleteStock(${s.id})">🗑</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+/* ================= TARGET BULANAN ================= */
+function saveTarget(){
+  target.pendapatan = Number(document.getElementById("targetInput").value)||0;
+  save("himwi_target", target);
+  renderAll();
+}
+
+function renderTargetCard(){
+  const s = computeStats();
+  const t = target.pendapatan||0;
+  const box = document.getElementById("targetCard");
+  if(!t){ box.innerHTML = `<p class="hint" style="margin:0;">Belum ada target bulanan. Atur di tab "Pengaturan".</p>`; return; }
+  const pct = Math.min(100, Math.round((s.totalPendapatan/t)*100));
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;">
+      <span class="serif" style="color:${GOLD}; font-size:1.05rem;">Target Pendapatan Bulan Ini</span>
+      <span class="mono" style="font-size:13px;color:${MUTED}">${formatRp(s.totalPendapatan)} / ${formatRp(t)}</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <p class="hint" style="margin-top:6px;">${pct}% tercapai</p>
+  `;
+}
+
+/* ================= BACKUP / RESTORE ================= */
+function backupData(){
+  const data = {};
+  ALL_KEYS.forEach(k=> data[k] = load(k, null));
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "himwi-laundry-backup-" + todayISO() + ".json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function restoreData(){
+  const file = document.getElementById("restoreFile").files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      ALL_KEYS.forEach(k=>{ if(data[k]!==undefined && data[k]!==null) localStorage.setItem(k, JSON.stringify(data[k])); });
+      alert("Data berhasil dipulihkan. Halaman akan dimuat ulang.");
+      location.reload();
+    }catch(err){
+      alert("Gagal membaca file backup. Pastikan file JSON yang benar.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ================= STATS & CHARTS ================= */
+function computeStats(){
+  const thisMonthEntries = entries.filter(e=>inThisMonth(e.date));
+  const thisMonthExpenses = expenses.filter(e=>inThisMonth(e.date));
+  const totalPendapatan = thisMonthEntries.reduce((s,e)=>s+e.pendapatan,0);
+  const totalPelanggan = thisMonthEntries.reduce((s,e)=>s+e.pelanggan,0);
+  const totalKg = thisMonthEntries.reduce((s,e)=>s+e.kilogram,0);
+  const totalUpah = thisMonthEntries.reduce((s,e)=>s+upahForEntry(e),0);
+  const totalBOP = thisMonthExpenses.reduce((s,e)=>s+e.amount,0);
+  const labaBersih = totalPendapatan - totalUpah - totalBOP;
+  const avgPelanggan = thisMonthEntries.length ? Math.round(totalPelanggan/thisMonthEntries.length) : 0;
+  return {totalPendapatan, totalPelanggan, totalKg, totalUpah, totalBOP, labaBersih, avgPelanggan};
+}
+
+function renderCards(){
+  const s = computeStats();
+  document.getElementById("cardsRow1").innerHTML = `
+    <div class="card" style="border-top-color:${GOLD}"><div class="val mono">${formatRp(s.totalPendapatan)}</div><div class="lbl">Pendapatan Bulan Ini</div></div>
+    <div class="card" style="border-top-color:${GOLD}"><div class="val mono">${formatRp(s.totalUpah)}</div><div class="lbl">Upah Pekerja Bulan Ini</div></div>
+    <div class="card" style="border-top-color:${RED_BRIGHT}"><div class="val mono">${formatRp(s.totalBOP)}</div><div class="lbl">Pengeluaran BOP Bulan Ini</div></div>
+  `;
+  const labaColor = s.labaBersih>=0 ? GREEN : WARN;
+  document.getElementById("cardsRow2").innerHTML = `
+    <div class="card" style="border-top-color:${labaColor}"><div class="val mono" style="color:${labaColor}">${formatRp(s.labaBersih)}</div><div class="lbl">Laba Bersih Bulan Ini</div></div>
+    <div class="card" style="border-top-color:${GOLD}"><div class="val mono">${s.avgPelanggan}</div><div class="lbl">Rata² Pelanggan/Hari</div></div>
+    <div class="card" style="border-top-color:${GOLD}"><div class="val mono">${s.totalKg} kg</div><div class="lbl">Total Kilogram Bulan Ini</div></div>
+  `;
+  const today = entries.find(e=>e.date===todayISO());
+  document.getElementById("stampToday").textContent = today ? formatRp(today.pendapatan) : "Belum ada";
+  renderTargetCard();
+}
+
+function renderChart(){
+  const last7 = [...entries].sort((a,b)=> a.date<b.date?1:-1).slice(0,7).reverse();
+  document.getElementById("chartEmpty").style.display = last7.length ? "none" : "block";
+  document.getElementById("chartCanvas").style.display = last7.length ? "block" : "none";
+  if(!last7.length) return;
+  const labels = last7.map(e=>formatTanggal(e.date));
+  const pendapatanData = last7.map(e=>e.pendapatan);
+  const upahData = last7.map(e=>upahForEntry(e));
+  if(chart) chart.destroy();
+  chart = new Chart(document.getElementById("chartCanvas"), {
+    type: "bar",
+    data: { labels, datasets: [
+      { label:"Pendapatan", data:pendapatanData, backgroundColor:GOLD, borderRadius:3 },
+      { label:"Upah", data:upahData, backgroundColor:RED_BRIGHT, borderRadius:3 },
+    ]},
+    options: {
+      plugins:{ legend:{ labels:{ color:CREAM, font:{size:11} } } },
+      scales:{
+        x:{ ticks:{ color:MUTED, font:{size:10} }, grid:{ color:BORDER } },
+        y:{ ticks:{ color:MUTED, font:{size:10} }, grid:{ color:BORDER } },
+      }
+    }
+  });
+}
+
+function renderMonthlyChart(){
+  const map = {};
+  entries.forEach(e=>{
+    const mk = monthKey(e.date);
+    map[mk] = (map[mk]||0) + e.pendapatan;
+  });
+  const months = Object.keys(map).sort().slice(-6);
+  document.getElementById("chartMonthlyEmpty").style.display = months.length ? "none" : "block";
+  document.getElementById("chartMonthly").style.display = months.length ? "block" : "none";
+  if(!months.length) return;
+  const labels = months.map(formatBulan);
+  const data = months.map(m=>map[m]);
+  if(monthlyChart) monthlyChart.destroy();
+  monthlyChart = new Chart(document.getElementById("chartMonthly"), {
+    type:"bar",
+    data:{ labels, datasets:[{ label:"Pendapatan", data, backgroundColor:GOLD, borderRadius:3 }] },
+    options:{
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ ticks:{ color:MUTED, font:{size:10} }, grid:{ color:BORDER } },
+        y:{ ticks:{ color:MUTED, font:{size:10} }, grid:{ color:BORDER } },
+      }
+    }
+  });
+}
+
+function renderEntriesTable(){
+  const sorted = [...entries].sort((a,b)=> a.date>b.date?1:-1);
+  const tbody = document.getElementById("entriesTable");
+  if(!sorted.length){ tbody.innerHTML = '<tr><td colspan="7" class="empty">Belum ada catatan tersimpan.</td></tr>'; return; }
+  tbody.innerHTML = sorted.map(e=>`
+    <tr>
+      <td>${formatTanggal(e.date)}</td>
+      <td style="color:${MUTED};font-size:12px;">${(e.present||[]).join(", ")||"—"}</td>
+      <td class="right mono">${e.pelanggan}</td>
+      <td class="right mono">${e.kilogram}</td>
+      <td class="right mono" style="color:${GOLD}">${formatRp(e.pendapatan)}</td>
+      <td class="right mono" style="color:${RED_BRIGHT}">${formatRp(upahForEntry(e))}</td>
+      <td class="right print-hide"><button class="del" onclick="deleteEntry('${e.date}')">🗑</button></td>
+    </tr>
+  `).join("");
+}
+
+function renderExpensesTable(){
+  const sorted = [...expenses].sort((a,b)=> a.date>b.date?1:-1);
+  const tbody = document.getElementById("expensesTable");
+  if(!sorted.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty">Belum ada pengeluaran tercatat.</td></tr>'; return; }
+  tbody.innerHTML = sorted.map(e=>`
+    <tr>
+      <td>${formatTanggal(e.date)}</td>
+      <td>${e.category}</td>
+      <td style="color:${MUTED};font-size:12px;">${e.note||"—"}</td>
+      <td class="right mono" style="color:${RED_BRIGHT}">${formatRp(e.amount)}</td>
+      <td class="right print-hide"><button class="del" onclick="deleteExpense(${e.id})">🗑</button></td>
+    </tr>
+  `).join("");
+}
+
+function csvEscape(v){ const s=String(v??""); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+
+function downloadCSV(){
+  const s = computeStats();
+  const sortedE = [...entries].sort((a,b)=> a.date>b.date?1:-1);
+  const sortedX = [...expenses].sort((a,b)=> a.date>b.date?1:-1);
+  const lines = [];
+  lines.push("LAPORAN HIMWI LAUNDRY");
+  lines.push("Diunduh," + new Date().toLocaleString("id-ID"));
+  lines.push("");
+  lines.push("CATATAN HARIAN");
+  lines.push(["Tanggal","Pekerja Masuk","Pelanggan","Kilogram","Pendapatan","Upah"].map(csvEscape).join(","));
+  sortedE.forEach(e=>{
+    lines.push([e.date, (e.present||[]).join(" | "), e.pelanggan, e.kilogram, e.pendapatan, upahForEntry(e)].map(csvEscape).join(","));
+  });
+  lines.push("");
+  lines.push("PENGELUARAN (BOP)");
+  lines.push(["Tanggal","Kategori","Catatan","Jumlah"].map(csvEscape).join(","));
+  sortedX.forEach(e=>{ lines.push([e.date, e.category, e.note||"", e.amount].map(csvEscape).join(",")); });
+  lines.push("");
+  lines.push("RINGKASAN BULAN INI");
+  lines.push("Pendapatan," + s.totalPendapatan);
+  lines.push("Upah Pekerja," + s.totalUpah);
+  lines.push("Pengeluaran BOP," + s.totalBOP);
+  lines.push("Laba Bersih," + s.labaBersih);
+  const csv = "\uFEFF" + lines.join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "himwi-laundry-laporan-" + todayISO() + ".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function renderAll(){
+  renderCards();
+  renderChart();
+  renderMonthlyChart();
+  renderEntriesTable();
+  renderExpensesTable();
+  renderEmployeeChips();
+  renderOrdersTable();
+  renderStockTable();
+  if(currentTab==="upah"){ renderWeeklyTable(); renderAttendanceTable(); }
+}
+
+loadEntryForDate();
+autoHitungHargaItem();
+renderCartBox();
+renderAll();
+</script>
+</body>
+</html>
